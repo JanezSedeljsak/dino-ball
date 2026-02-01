@@ -1,12 +1,12 @@
 [package]
 name = "dino-ball"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 
 [package.metadata.bundle]
 name = "Dino Ball"
 identifier = "com.janez.dinoball"
-icon = ["assets/icon.icns"]
+icon = ["assets/icon.icns", "assets/icon.png"]
 resources = ["assets"]
 copyright = "Copyright © 2026 Janez Sedeljsak"
 category = "Game"

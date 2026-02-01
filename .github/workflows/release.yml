@@ -3,27 +3,24 @@ name: Release Build
 on:
   push:
     tags:
-      - 'v*' # Trigger on version tags like v1.0.0
+      - 'v*'
 
 permissions:
   contents: write
 
 jobs:
-  release:
+  build:
     name: Build for ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
           - os: ubuntu-latest
-            artifact_name: dino-ball-linux.deb
-            bundle_path: target/release/bundle/debian/*.deb
+            platform: linux
           - os: macos-latest
-            artifact_name: Dino-Ball-macOS.zip
-            bundle_path: target/release/bundle/osx/Dino Ball.app
+            platform: macos
           - os: windows-latest
-            artifact_name: dino-ball-windows.exe
-            bundle_path: target/release/dino-ball.exe
+            platform: windows
 
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +35,7 @@ jobs:
           sudo apt-get install -y libasound2-dev libudev-dev pkg-config
 
       - name: Install cargo-bundle
+        if: matrix.os != 'windows-latest'
         run: cargo install cargo-bundle
 
       - name: Generate macOS Icon
@@ -45,28 +43,64 @@ jobs:
         run: chmod +x scripts/make_icns.sh && ./scripts/make_icns.sh
 
       - name: Build and Bundle
-        run: cargo bundle --release
-
-      - name: Prepare Windows Artifact
-        if: matrix.os == 'windows-latest'
         run: |
-          mkdir dist
-          cp target/release/dino-ball.exe dist/
-          cp -r assets dist/
-          compress-archive -Path dist/* -DestinationPath dino-ball-windows.zip
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            cargo build --release
+          else
+            cargo bundle --release
+          fi
+        shell: bash
+
+      - name: Prepare Linux Artifacts
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mkdir -p dist-linux
+          # Copy the .deb
+          cp target/release/bundle/debian/*.deb dist-linux/
+          # Create a universal tar.gz
+          mkdir -p dino-ball-linux
+          cp target/release/dino-ball dino-ball-linux/
+          cp -r assets dino-ball-linux/
+          tar -czf dist-linux/dino-ball-linux.tar.gz dino-ball-linux/
 
       - name: Prepare macOS Artifact
         if: matrix.os == 'macos-latest'
         run: |
+          mkdir -p dist-macos
           cd target/release/bundle/osx
-          zip -r ../../../../Dino-Ball-macOS.zip "Dino Ball.app"
+          # Using ditto on macOS is the most reliable way to zip a .app bundle
+          ditto -c -k --sequesterRsrc --keepParent "Dino Ball.app" ../../../../dist-macos/Dino-Ball-macOS.zip
 
-      - name: Upload Release Assets
+      - name: Prepare Windows Artifact
+        if: matrix.os == 'windows-latest'
+        run: |
+          mkdir dist-windows
+          mkdir dino-ball-windows
+          cp target/release/dino-ball.exe dino-ball-windows/
+          cp -r assets dino-ball-windows/
+          Compress-Archive -Path dino-ball-windows -DestinationPath dist-windows/dino-ball-windows.zip
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-${{ matrix.platform }}
+          path: dist-*/*
+
+  publish:
+    name: Publish Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all-artifacts
+          pattern: artifacts-*
+          merge-multiple: true
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            target/release/bundle/debian/*.deb
-            Dino-Ball-macOS.zip
-            dino-ball-windows.zip
+          files: all-artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

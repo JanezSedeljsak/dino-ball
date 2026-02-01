@@ -26,7 +26,8 @@ This project is a modern collaboration between human creativity and artificial i
 2. Clone the repository.
 3. Run the following command in your terminal:
    ```bash
-   
+   cargo run
+   ```
 ---
 
 *Made with ❤️ for my nephews :)*
