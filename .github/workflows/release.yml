@@ -1,0 +1,72 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on version tags like v1.0.0
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: dino-ball-linux.deb
+            bundle_path: target/release/bundle/debian/*.deb
+          - os: macos-latest
+            artifact_name: Dino-Ball-macOS.zip
+            bundle_path: target/release/bundle/osx/Dino Ball.app
+          - os: windows-latest
+            artifact_name: dino-ball-windows.exe
+            bundle_path: target/release/dino-ball.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux Dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libudev-dev pkg-config
+
+      - name: Install cargo-bundle
+        run: cargo install cargo-bundle
+
+      - name: Generate macOS Icon
+        if: matrix.os == 'macos-latest'
+        run: chmod +x scripts/make_icns.sh && ./scripts/make_icns.sh
+
+      - name: Build and Bundle
+        run: cargo bundle --release
+
+      - name: Prepare Windows Artifact
+        if: matrix.os == 'windows-latest'
+        run: |
+          mkdir dist
+          cp target/release/dino-ball.exe dist/
+          cp -r assets dist/
+          compress-archive -Path dist/* -DestinationPath dino-ball-windows.zip
+
+      - name: Prepare macOS Artifact
+        if: matrix.os == 'macos-latest'
+        run: |
+          cd target/release/bundle/osx
+          zip -r ../../../../Dino-Ball-macOS.zip "Dino Ball.app"
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            target/release/bundle/debian/*.deb
+            Dino-Ball-macOS.zip
+            dino-ball-windows.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
