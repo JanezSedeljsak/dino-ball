@@ -1,4 +1,4 @@
-pub const SPEED_RATIO: f32 = 0.315;
+pub const SPEED_RATIO: f32 = 0.333;
 pub const GRAVITY: f32 = 2310.0;
 pub const JUMP_HEIGHT_RATIO_OF_POLE: f32 = 0.8;
 pub const NET_HEIGHT_RATIO: f32 = 0.45;
@@ -15,7 +15,7 @@ pub const BALL_GRAVITY: f32 = 1050.0;
 pub const BALL_MAX_SPEED: f32 = 840.0;
 pub const BALL_HORIZONTAL_FRICTION: f32 = 0.99;
 pub const BALL_ROTATION_FACTOR: f32 = 0.05;
-pub const BALL_MAX_SPIN: f32 = 10.0;
+pub const BALL_MAX_SPIN: f32 = 5.0;
 
 pub const WINNING_SCORE: u32 = 5;
 

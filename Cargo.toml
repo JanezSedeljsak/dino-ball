@@ -3,6 +3,15 @@ name = "dino-ball"
 version = "0.1.0"
 edition = "2024"
 
+[package.metadata.bundle]
+name = "Dino Ball"
+identifier = "com.janez.dinoball"
+icon = ["assets/icon.icns"]
+resources = ["assets"]
+copyright = "Copyright © 2026 Janez Sedeljsak"
+category = "Game"
+short_description = "A Bevy game about dinos and volleyball."
+
 [dependencies]
 bevy = { version = "0.18.0", features = ["default"] }
 image = "0.25"

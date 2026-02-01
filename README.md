@@ -1,6 +1,6 @@
 # 🦖 Dino Volley
 
-A fun, fast-paced 2D dinosaur volleyball game built with **Rust** and the **Bevy Engine**. 
+A fun 2D dinosaur volleyball game built with **Rust** and the **Bevy Engine**. 
 
 Started as a weekend project, this game was created to bring some extra joy to a Sunday afternoon for my two nephews. It's a simple, lighthearted tribute to the Blobby Volley game.
 
@@ -8,7 +8,7 @@ Started as a weekend project, this game was created to bring some extra joy to a
 
 ## 📽️ Gameplay
 
-![Dino Volley Gameplay](gameplay.mp4)
+![Dino Volley Gameplay](gameplay.png)
 
 ---
 
