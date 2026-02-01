@@ -302,6 +302,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut images: Res
         Transform::from_xyz(0.0, 200.0, 5.0),
         Ball,
         Velocity::default(),
+        AngularVelocity::default(),
     ));
 
     commands.spawn((
@@ -328,7 +329,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut images: Res
 }
 
 fn ball_system(
-    mut ball_query: Query<(&mut Transform, &mut Velocity), (With<Ball>, Without<Player1>, Without<Player2>)>,
+    mut ball_query: Query<(&mut Transform, &mut Velocity, &mut AngularVelocity), (With<Ball>, Without<Player1>, Without<Player2>)>,
     player1_query: Query<(&Transform, &Velocity), (With<Player1>, Without<Ball>, Without<Player2>)>,
     player2_query: Query<(&Transform, &Velocity), (With<Player2>, Without<Ball>, Without<Player1>)>,
     mut game_state: ResMut<state::GameState>,
@@ -343,7 +344,7 @@ fn ball_system(
     let screen_half_width = width / 2.0;
     let screen_half_height = height / 2.0;
 
-    let Some((mut ball_transform, mut ball_velocity)) = ball_query.iter_mut().next() else { return };
+    let Some((mut ball_transform, mut ball_velocity, mut ball_angular_velocity)) = ball_query.iter_mut().next() else { return };
 
     if game_state.game_over {
         ball_velocity.0 = Vec2::ZERO;
@@ -362,7 +363,9 @@ fn ball_system(
         };
         ball_transform.translation.x = target_x;
         ball_transform.translation.y = -screen_half_height + height * config::GROUND_OFFSET_RATIO + 150.0;
+        ball_transform.rotation = Quat::IDENTITY;
         ball_velocity.0 = Vec2::ZERO;
+        ball_angular_velocity.0 = 0.0;
 
         let ball_pos = ball_transform.translation.xy();
         let ball_radius = (height * config::BALL_SIZE_RATIO) / 2.0;
@@ -398,6 +401,9 @@ fn ball_system(
                 game_state.is_ball_active = true;
                 ball_velocity.0.y = serve_velocity; 
                 ball_velocity.0.x = (ball_pos.x - p_pos.x) * 15.0;
+                
+                let hit_dir = (ball_pos.x - p_pos.x) / (player_width / 2.0);
+                ball_angular_velocity.0 = (-hit_dir * 30.0).clamp(-config::BALL_MAX_SPIN, config::BALL_MAX_SPIN);
             }
         }
     } else {
@@ -406,6 +412,10 @@ fn ball_system(
         
         ball_transform.translation.x += ball_velocity.0.x * delta;
         ball_transform.translation.y += ball_velocity.0.y * delta;
+        
+        ball_transform.rotate_z(ball_angular_velocity.0 * delta); // angular velocity
+        ball_transform.rotate_z(-ball_velocity.0.x * config::BALL_ROTATION_FACTOR * delta);
+        ball_angular_velocity.0 *= 0.98; // friction
 
         let ball_radius = (height * config::BALL_SIZE_RATIO) / 2.0;
 
@@ -464,6 +474,10 @@ fn ball_system(
                 let speed = ball_velocity.0.length().max(650.0);
                 ball_velocity.0 = normal * (speed + 300.0);
                 ball_velocity.0 = ball_velocity.0.clamp_length_max(config::BALL_MAX_SPEED);
+                
+                // spin on hit
+                let hit_dir = (b_pos.x - p_pos.x) / (player_width / 2.0);
+                ball_angular_velocity.0 = (-hit_dir * 50.0).clamp(-config::BALL_MAX_SPIN, config::BALL_MAX_SPIN);
                 
                 let overlap = (p_radius + ball_radius) - distance;
                 ball_transform.translation.x += normal.x * overlap;

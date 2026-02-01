@@ -6,7 +6,7 @@ pub const NET_WIDTH_RATIO: f32 = 0.03;
 pub const NET_COLLISION_WIDTH: f32 = 5.0;
 pub const GROUND_OFFSET_RATIO: f32 = 0.12;
 
-pub const PLAYER_HEIGHT_RATIO: f32 = 0.15;
+pub const PLAYER_HEIGHT_RATIO: f32 = 0.2;
 pub const PLAYER_ASPECT_RATIO: f32 = 0.8;
 
 pub const BALL_SIZE_RATIO: f32 = 0.1;
@@ -14,8 +14,10 @@ pub const BALL_BOUNCE: f32 = 0.95;
 pub const BALL_GRAVITY: f32 = 1050.0;
 pub const BALL_MAX_SPEED: f32 = 840.0;
 pub const BALL_HORIZONTAL_FRICTION: f32 = 0.99;
+pub const BALL_ROTATION_FACTOR: f32 = 0.05;
+pub const BALL_MAX_SPIN: f32 = 10.0;
 
-pub const WINNING_SCORE: u32 = 11;
+pub const WINNING_SCORE: u32 = 5;
 
 pub const ASSET_BACK: &str = "back.png";
 pub const ASSET_BALL: &str = "ball.png";
