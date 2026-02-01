@@ -28,7 +28,7 @@ function App() {
     <div class="container">
       <header>
         <h1>Dino Volley</h1>
-        <p class="subtitle">A next-gen 2D dinosaur volleyball game built with Rust.</p>
+        <p class="subtitle">A 2D dinosaur volleyball game built with Rust.</p>
       </header>
 
       <div class="screenshot-container">
