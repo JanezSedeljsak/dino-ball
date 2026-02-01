@@ -8,7 +8,7 @@ Started as a weekend project, this game was created to bring some extra joy to a
 
 ## 📽️ Gameplay
 
-![Dino Volley Gameplay](gameplay.png)
+![Dino Volley Gameplay](web/src/assets/gameplay.png)
 
 ---
 
@@ -26,9 +26,7 @@ This project is a modern collaboration between human creativity and artificial i
 2. Clone the repository.
 3. Run the following command in your terminal:
    ```bash
-   cargo run
-   ```
-
+   
 ---
 
-*Made with ❤️ for my nephews.*
+*Made with ❤️ for my nephews :)*
