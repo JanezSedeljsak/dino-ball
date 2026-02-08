@@ -1,4 +1,29 @@
-pub const SPEED_RATIO: f32 = 0.333;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum SpeedLevel {
+    Slow,
+    #[default]
+    Normal,
+    Fast,
+}
+
+impl SpeedLevel {
+    pub fn factor(&self) -> f32 {
+        match self {
+            SpeedLevel::Slow => 0.45,
+            SpeedLevel::Normal => 1.0,
+            SpeedLevel::Fast => 1.2,
+        }
+    }
+    pub fn to_u32(&self) -> u32 {
+        match self {
+            SpeedLevel::Slow => 1,
+            SpeedLevel::Normal => 2,
+            SpeedLevel::Fast => 3,
+        }
+    }
+}
+
+pub const SPEED_RATIO: f32 = 0.35;
 pub const GRAVITY: f32 = 2310.0;
 pub const JUMP_HEIGHT_RATIO_OF_POLE: f32 = 0.8;
 pub const NET_HEIGHT_RATIO: f32 = 0.45;
@@ -10,7 +35,7 @@ pub const PLAYER_HEIGHT_RATIO: f32 = 0.2;
 pub const PLAYER_ASPECT_RATIO: f32 = 0.8;
 
 pub const BALL_SIZE_RATIO: f32 = 0.1;
-pub const BALL_BOUNCE: f32 = 0.95;
+pub const BALL_BOUNCE: f32 = 1.25;
 pub const BALL_GRAVITY: f32 = 1050.0;
 pub const BALL_MAX_SPEED: f32 = 840.0;
 pub const BALL_HORIZONTAL_FRICTION: f32 = 0.99;

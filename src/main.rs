@@ -46,25 +46,36 @@ fn main() {
             ..default()
         }))
         .init_resource::<state::GameState>()
-        .add_systems(Startup, setup)
+        .init_resource::<state::GameSpeed>()
+        .init_state::<state::AppMode>()
+        .add_systems(Startup, (setup, setup_menu))
+        .add_systems(Update, (
+            close_on_esc,
+            set_window_icon,
+            dynamic_layout,
+        ))
+        .add_systems(Update, (
+            menu_button_system,
+            menu_color_system,
+        ).run_if(in_state(state::AppMode::Menu)))
         .add_systems(Update, (
             input_system,
             player_movement, 
             ball_system,
             score_and_reset_system,
-            close_on_esc, 
-            dynamic_layout,
             player_animation,
             win_system,
             button_system,
-            set_window_icon
-        ))
+        ).run_if(in_state(state::AppMode::Playing)))
         .run();
 }
 
 fn input_system(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut game_state: ResMut<state::GameState>,
+    mut app_state: ResMut<NextState<state::AppMode>>,
+    menu_ui: Query<Entity, With<MenuUI>>,
+    mut commands: Commands,
 ) {
     if keyboard.just_pressed(KeyCode::KeyR) {
         game_state.player1_score = 0;
@@ -72,6 +83,10 @@ fn input_system(
         game_state.is_ball_active = false;
         game_state.game_over = false;
         game_state.winner = None;
+        app_state.set(state::AppMode::Menu);
+        for entity in menu_ui.iter() {
+            commands.entity(entity).insert(Visibility::Visible);
+        }
     }
 }
 
@@ -83,6 +98,8 @@ fn button_system(
     mut game_state: ResMut<state::GameState>,
     mut commands: Commands,
     win_ui: Query<Entity, With<WinUI>>,
+    mut app_state: ResMut<NextState<state::AppMode>>,
+    menu_ui: Query<Entity, With<MenuUI>>,
 ) {
     for (interaction, mut color) in interaction_query.iter_mut() {
         match *interaction {
@@ -95,6 +112,10 @@ fn button_system(
                 for entity in win_ui.iter() {
                     commands.entity(entity).despawn();
                 }
+                app_state.set(state::AppMode::Menu);
+                for entity in menu_ui.iter() {
+                    commands.entity(entity).insert(Visibility::Visible);
+                }
             }
             Interaction::Hovered => {
                 *color = BackgroundColor(Color::srgb(0.3, 0.3, 0.3));
@@ -102,6 +123,65 @@ fn button_system(
             Interaction::None => {
                 *color = BackgroundColor(Color::srgb(0.15, 0.15, 0.15));
             }
+        }
+    }
+}
+
+fn menu_button_system(
+    mut interaction_query: Query<
+        (&Interaction, Option<&SpeedButton>, Option<&StartButton>),
+        (Changed<Interaction>, With<Button>),
+    >,
+    mut game_speed: ResMut<state::GameSpeed>,
+    mut app_state: ResMut<NextState<state::AppMode>>,
+    mut menu_ui: Query<Entity, With<MenuUI>>,
+    mut commands: Commands,
+) {
+    for (interaction, speed_btn, start_btn) in interaction_query.iter_mut() {
+        if *interaction == Interaction::Pressed {
+            if let Some(sb) = speed_btn {
+                game_speed.level = sb.0;
+            } else if start_btn.is_some() {
+                app_state.set(state::AppMode::Playing);
+                for entity in menu_ui.iter_mut() {
+                    commands.entity(entity).insert(Visibility::Hidden);
+                }
+            }
+        }
+    }
+}
+
+fn menu_color_system(
+    game_speed: Res<state::GameSpeed>,
+    mut speed_buttons: Query<(&Interaction, &mut BackgroundColor, &SpeedButton)>,
+    mut start_button: Query<(&Interaction, &mut BackgroundColor), (With<StartButton>, Without<SpeedButton>)>,
+) {
+    for (interaction, mut color, sb) in speed_buttons.iter_mut() {
+        let is_selected = sb.0 == game_speed.level;
+        match *interaction {
+            Interaction::Pressed => { *color = BackgroundColor(Color::srgb(0.5, 0.5, 0.2)); }
+            Interaction::Hovered => {
+                if is_selected {
+                    *color = BackgroundColor(Color::srgb(0.7, 0.7, 0.3));
+                } else {
+                    *color = BackgroundColor(Color::srgb(0.4, 0.4, 0.4));
+                }
+            }
+            Interaction::None => {
+                if is_selected {
+                    *color = BackgroundColor(Color::srgb(0.6, 0.6, 0.2));
+                } else {
+                    *color = BackgroundColor(Color::srgb(0.2, 0.2, 0.2));
+                }
+            }
+        }
+    }
+
+    for (interaction, mut color) in start_button.iter_mut() {
+        match *interaction {
+            Interaction::Pressed => { *color = BackgroundColor(Color::srgb(0.5, 0.5, 0.5)); }
+            Interaction::Hovered => { *color = BackgroundColor(Color::srgb(0.4, 0.4, 0.4)); }
+            Interaction::None => { *color = BackgroundColor(Color::srgb(0.2, 0.2, 0.2)); }
         }
     }
 }
@@ -285,17 +365,119 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut images: Res
     ));
 }
 
+fn setup_menu(mut commands: Commands) {
+    commands.spawn((
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.7)),
+        MenuUI,
+    )).with_children(|parent| {
+        parent.spawn((
+            Text::new("DINO VOLLEY"),
+            TextFont {
+                font_size: 80.0,
+                ..default()
+            },
+            TextColor(Color::WHITE),
+            Node {
+                margin: UiRect::bottom(Val::Px(40.0)),
+                ..default()
+            },
+        ));
+
+        parent.spawn((
+            Text::new("SELECT GAME SPEED"),
+            TextFont {
+                font_size: 32.0,
+                ..default()
+            },
+            TextColor(Color::WHITE),
+            Node {
+                margin: UiRect::bottom(Val::Px(20.0)),
+                ..default()
+            },
+        ));
+
+        parent.spawn(Node {
+            flex_direction: FlexDirection::Row,
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            margin: UiRect::bottom(Val::Px(40.0)),
+            ..default()
+        }).with_children(|row| {
+            let levels = [
+                config::SpeedLevel::Slow,
+                config::SpeedLevel::Normal,
+                config::SpeedLevel::Fast,
+            ];
+            for level in levels {
+                row.spawn((
+                    Button,
+                    Node {
+                        width: Val::Px(60.0),
+                        height: Val::Px(60.0),
+                        margin: UiRect::all(Val::Px(10.0)),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        ..default()
+                    },
+                    BackgroundColor(Color::srgb(0.2, 0.2, 0.2)),
+                    SpeedButton(level),
+                )).with_children(|btn| {
+                    btn.spawn((
+                        Text::new(level.to_u32().to_string()),
+                        TextFont {
+                            font_size: 24.0,
+                            ..default()
+                        },
+                        TextColor(Color::WHITE),
+                    ));
+                });
+            }
+        });
+
+        parent.spawn((
+            Button,
+            Node {
+                width: Val::Px(240.0),
+                height: Val::Px(80.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            BackgroundColor(Color::srgb(0.2, 0.2, 0.2)),
+            StartButton,
+        )).with_children(|btn| {
+            btn.spawn((
+                Text::new("START"),
+                TextFont {
+                    font_size: 40.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+            ));
+        });
+    });
+}
+
 fn ball_system(
     mut ball_query: Query<(&mut Transform, &mut Velocity, &mut AngularVelocity), (With<Ball>, Without<Player1>, Without<Player2>)>,
     player1_query: Query<(&Transform, &Velocity), (With<Player1>, Without<Ball>, Without<Player2>)>,
     player2_query: Query<(&Transform, &Velocity), (With<Player2>, Without<Ball>, Without<Player1>)>,
     mut game_state: ResMut<state::GameState>,
+    game_speed: Res<state::GameSpeed>,
     time: Res<Time>,
     windows: Query<&Window, With<bevy::window::PrimaryWindow>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
 ) {
     let Some(window) = windows.iter().next() else { return };
-    let delta = time.delta_secs_f64() as f32;
+    let delta = (time.delta_secs_f64() as f32) * game_speed.level.factor();
     let width = window.width();
     let height = window.height();
     let screen_half_width = width / 2.0;
@@ -384,10 +566,13 @@ fn ball_system(
             ball_transform.translation.x = screen_half_width - ball_radius;
             ball_velocity.0.x *= -config::BALL_BOUNCE;
         }
+        // Removed roof boundary: ball can go off screen at the top
+        /*
         if ball_transform.translation.y + ball_radius > screen_half_height {
             ball_transform.translation.y = screen_half_height - ball_radius;
             ball_velocity.0.y *= -config::BALL_BOUNCE;
         }
+        */
 
         let net_half_thickness = config::NET_COLLISION_WIDTH;
         let net_height = height * config::NET_HEIGHT_RATIO;
@@ -428,8 +613,8 @@ fn ball_system(
 
             if distance < p_radius + ball_radius {
                 let normal = dist_vec.normalize_or_zero();
-                let speed = ball_velocity.0.length().max(650.0);
-                ball_velocity.0 = normal * (speed + 300.0);
+                let speed = ball_velocity.0.length().max(900.0);
+                ball_velocity.0 = normal * (speed + 600.0);
                 ball_velocity.0 = ball_velocity.0.clamp_length_max(config::BALL_MAX_SPEED);
                 
                 // spin on hit

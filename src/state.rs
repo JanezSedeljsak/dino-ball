@@ -1,10 +1,31 @@
 use bevy::prelude::*;
+use crate::config;
 
 #[derive(Default, PartialEq, Clone, Copy)]
 pub enum ServingPlayer {
     #[default]
     Player1,
     Player2,
+}
+
+#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum AppMode {
+    #[default]
+    Menu,
+    Playing,
+}
+
+#[derive(Resource)]
+pub struct GameSpeed {
+    pub level: config::SpeedLevel,
+}
+
+impl Default for GameSpeed {
+    fn default() -> Self {
+        Self {
+            level: config::SpeedLevel::Normal,
+        }
+    }
 }
 
 #[derive(Resource, Default)]

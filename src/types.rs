@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use crate::config;
 
 #[derive(Component)]
 pub struct Player1;
@@ -54,3 +55,12 @@ pub struct WinUI;
 
 #[derive(Component)]
 pub struct RestartButton;
+
+#[derive(Component)]
+pub struct MenuUI;
+
+#[derive(Component)]
+pub struct SpeedButton(pub config::SpeedLevel);
+
+#[derive(Component)]
+pub struct StartButton;
